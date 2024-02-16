@@ -1,25 +1,69 @@
-import movieDatabaseClient, { Movie } from "./movie-database-client";
+import config from '../config';
+import MovieDatabaseClient, { MovieSearchResponse } from './movie-database-client';
 
-describe("Movie databaseclient", () => {
-  test("should return movie list", async () => {
-    const mockQuery = "test-query";
-    const mockResponse: Array<Movie> = [
-      {
-        title: "test-title",
-        overview: "test-overview",
-        poster_path: "test-path",
-      },
-    ];
-    const fetchMock = jest.spyOn(global, "fetch").mockResolvedValueOnce({
-      json: () => ({ results: mockResponse }),
-    } as any);
+describe('Movie Database Client', () => {
+  const mockMovieSearchResponse: Array<MovieSearchResponse> = [
+    {
+      title: 'test-title',
+      overview: 'test-overview',
+      poster_path: '/test-path',
+    },
+  ];
+  const mockQuery = 'test-query';
+  const mockBaseUrl = 'fake-base-url/';
 
-    const response = await movieDatabaseClient.fetchMovies(mockQuery);
+  beforeEach(() => {
+    jest.replaceProperty(config.movieDb, 'accessToken', 'fake-token');
+    jest.spyOn(global, 'fetch').mockImplementation(async (url: string) => {
+      if (url === config.movieDb.configurationUrl) {
+        return { json: async () => ({ images: { base_url: mockBaseUrl } }) };
+      } else if (url.includes(config.movieDb.movieSearchUrl)) {
+        return { json: async () => ({ results: mockMovieSearchResponse }) };
+      }
+    });
+  });
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      `https://api.themoviedb.org/3/search/movie?query=${mockQuery}&page=1`,
-      { method: "GET", headers: { accept: "application/json" } }
-    );
-    expect(response).toEqual(mockResponse);
+  describe('#fetchMovies', () => {
+    test('should fetch configuration exactly once', async () => {
+      const client = new MovieDatabaseClient()
+
+      await client.fetchMovies(mockQuery);
+      await client.fetchMovies(mockQuery);
+
+      expect(global.fetch).toHaveBeenCalledWith(config.movieDb.configurationUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer fake-token',
+          accept: 'application/json',
+        },
+      });
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+    });
+
+
+
+    test('should fetch movies', async () => {
+      await new MovieDatabaseClient().fetchMovies(mockQuery);
+
+      expect(global.fetch).toHaveBeenCalledWith(`${config.movieDb.movieSearchUrl}?query=${mockQuery}&page=1`, {
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer fake-token',
+          accept: 'application/json',
+        },
+      });
+    });
+
+    test('should return movie list', async () => {
+      const response = await new MovieDatabaseClient().fetchMovies(mockQuery);
+
+      expect(response).toEqual([
+        {
+          title: mockMovieSearchResponse[0].title,
+          description: mockMovieSearchResponse[0].overview,
+          imageSrc: `${mockBaseUrl}original${mockMovieSearchResponse[0].poster_path}`,
+        },
+      ]);
+    });
   });
 });

@@ -5,14 +5,15 @@
   "author": "Faragó Dávid",
   "license": "UNLICENSED",
   "scripts": {
-    "build": "npm run clean && tsc -p tsconfig.json || true",
-    "build:watch": "npm run clean && tsc -w -p tsconfig.json || true",
+    "build": "tsc -p tsconfig.json || true",
+    "build:watch": "tsc -w -p tsconfig.json || true",
     "start": "node dist/server.js",
     "test": "dotenv -e .env.test -- jest -i",
     "test:watch": "dotenv -e .env.test -- jest --watch"
   },
   "dependencies": {
     "@fastify/jwt": "8.0.0",
+    "@fastify/cors": "8.5.0",
     "dotenv": "16.4.2",
     "fastify": "4.26.1",
     "uuid": "9.0.1",

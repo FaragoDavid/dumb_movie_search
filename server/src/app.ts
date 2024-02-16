@@ -1,4 +1,5 @@
 import fastifyJwt from "@fastify/jwt";
+import cors from '@fastify/cors';
 import fastify from "fastify";
 import config from "./config";
 import z from "zod";
@@ -7,9 +8,13 @@ import { moviesRoutes } from "./routes/movies";
 function build(opts = {}) {
   const app = fastify(opts);
 
+
+  app.register(cors, {
+    origin: new RegExp(config.corsOrigin),
+  });
   app.register(fastifyJwt, { secret: config.jwtSecret });
 
-  app.addHook("onRequest", async (request, reply) => {
+  app.addHook('onRequest', async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch (e) {
