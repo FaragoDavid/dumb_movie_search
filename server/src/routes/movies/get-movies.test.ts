@@ -9,6 +9,7 @@ jest.mock('../../lib/cache');
 
 describe('Get movies route', () => {
   const mockQuery = 'test-query';
+  const mockRequestedPage = 1;
   const mockResponse = { response: 'test-response' };
   const redisClientExistsMock = jest.fn();
   const redisClientGetMock = jest.fn();
@@ -26,7 +27,7 @@ describe('Get movies route', () => {
   test('should respond with 401 if JWT token is missing or invalid', async () => {
     const response = await app().inject({
       method: 'GET',
-      url: `/v1/movies?query=${mockQuery}`,
+      url: `/v1/movies?query=${mockQuery}&page=${mockRequestedPage}`,
       headers: {
         Authorization: 'Bearer invalid-token',
       },
@@ -46,7 +47,7 @@ describe('Get movies route', () => {
     test('should respond with 200 API data', async () => {
       const response = await app().inject({
         method: 'GET',
-        url: `/v1/movies?query=${mockQuery}`,
+        url: `/v1/movies?query=${mockQuery}&page=${mockRequestedPage}`,
         headers: {
           Authorization: `Bearer ${signSync({})}`,
         },
@@ -59,24 +60,24 @@ describe('Get movies route', () => {
     test('should save movie data to cache', async () => {
       await app().inject({
         method: 'GET',
-        url: `/v1/movies?query=${mockQuery}`,
+        url: `/v1/movies?query=${mockQuery}&page=${mockRequestedPage}`,
         headers: {
           Authorization: `Bearer ${signSync({})}`,
         },
       });
 
-      expect(redisClientSetMock).toHaveBeenCalledWith(mockQuery, JSON.stringify(mockResponse));
+      expect(redisClientSetMock).toHaveBeenCalledWith(`${mockQuery}_${mockRequestedPage}`, JSON.stringify(mockResponse));
     });
   });
 
   describe('when query result is cached', () => {
     test('should respond with cached data', async () => {
       redisClientExistsMock.mockResolvedValue(true);
-      redisClientGetMock.mockImplementation(async (key) => (key === mockQuery ? JSON.stringify(mockResponse) : undefined));
+      redisClientGetMock.mockImplementation(async (key) => (key === `${mockQuery}_${mockRequestedPage}` ? JSON.stringify(mockResponse) : undefined));
 
       const response = await app().inject({
         method: 'GET',
-        url: `/v1/movies?query=${mockQuery}`,
+        url: `/v1/movies?query=${mockQuery}&page=${mockRequestedPage}`,
         headers: {
           Authorization: `Bearer ${signSync({})}`,
         },

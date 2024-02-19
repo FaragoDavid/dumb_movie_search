@@ -1,18 +1,19 @@
 'use client';
 
-import { MovieResponse } from '@/app/services/api-service';
+import { Movie } from '@/app/services/api-service';
 
 interface TileProps {
-  movie: MovieResponse;
+  movie: Movie;
 }
 
 const Tile: React.FC<TileProps> = ({ movie }) => {
-  const image = movie.imageSrc !== null ? <img src={movie.imageSrc} alt={movie.title} /> : '';
+  const image = movie.poster_path !== null ? <img src={movie.poster_path} alt={movie.title} /> : '';
+
   return (
     <div className="tile">
       <p className="text-center	text-xl	truncate">{movie.title}</p>
       {image}
-      <p className="truncate">{movie.description}</p>
+      <p className="truncate">{movie.overview}</p>
     </div>
   );
 };

@@ -3,12 +3,25 @@
 import { useState } from 'react';
 import SearchBar from './components/search-bar';
 import Tile from './components/tile';
-import { MovieResponse } from './services/api-service';
+import ApiService, { Movie, MovieSearchResponse } from './services/api-service';
+import Pagination from './components/pagination';
 
 const Main: React.FC = () => {
-  const [movies, setMovies] = useState<MovieResponse[]>([]);
-  const updateMovies = (movies: MovieResponse[]) => {
-    setMovies(movies);
+  const [query, setQuery] = useState('');
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const updateMovies = ({ results, total_pages }: MovieSearchResponse) => {
+    setMovies(results);
+    setCurrentPage(1);
+    setTotalPages(total_pages);
+  };
+
+  const onPageChange = async (page: number) => {
+    setCurrentPage(page);
+    const nextPage = await new ApiService().fetchMovies(query, page);
+    setMovies(nextPage.results);
   };
 
   return (
@@ -20,8 +33,9 @@ const Main: React.FC = () => {
           </div>
         </div>
       </div>
-      <SearchBar onTilesUpdate={updateMovies} />
+      <SearchBar query={query} setQuery={setQuery} onSearch={updateMovies} />
 
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
       <div className="container m-auto grid grid-cols-4 gap-7">
         {movies.map((movie) => (
           <Tile movie={movie} />

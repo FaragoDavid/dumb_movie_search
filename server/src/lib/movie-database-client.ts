@@ -1,9 +1,8 @@
 import config from '../config';
 
 export type MovieSearchResponse = {
-  title: string;
-  overview: string;
-  poster_path: string;
+  total_pages: number;
+  results: { title: string; overview: string; poster_path: string | null }[];
 };
 
 export type ConfigurationResponse = {
@@ -38,18 +37,20 @@ export default class MovieDatabaseClient {
     return this.imagesConfiguration;
   }
 
-  async fetchMovies(query: string): Promise<Array<Movie>> {
+  async fetchMovies(query: string, page: number): Promise<MovieSearchResponse> {
     await this.fetchConfiguration();
-    const apiResponse = (
-      (await (await fetch(`${config.movieDb.movieSearchUrl}?query=${query}&page=1`, this.options)).json()) as unknown as {
-        results: Array<MovieSearchResponse>;
-      }
-    ).results;
 
-    return apiResponse.map(({ title, overview, poster_path }) => ({
-      title,
-      description: overview,
-      imageSrc: poster_path ? `${this.imagesConfiguration?.base_url}original${poster_path}` : null,
-    }));
+    const { total_pages, results } = (await (
+      await fetch(`${config.movieDb.movieSearchUrl}?query=${query}&page=${page}`, this.options)
+    ).json()) as MovieSearchResponse;
+
+    return {
+      total_pages,
+      results: results.map(({ title, overview, poster_path }) => ({
+        title,
+        overview,
+        poster_path: poster_path ? `${this.imagesConfiguration?.base_url}original${poster_path}` : null,
+      })),
+    };
   }
 }

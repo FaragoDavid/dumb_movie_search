@@ -1,27 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
-import ApiService, { MovieResponse } from '@/app/services/api-service';
+import React from 'react';
+import ApiService, { MovieSearchResponse } from '@/app/services/api-service';
+import config from '../config';
 
 interface SearchBarProps {
-  onTilesUpdate: (newList: MovieResponse[]) => void;
+  query: string;
+  setQuery: (newQuery: string) => void;
+  onSearch: (newList: MovieSearchResponse) => void;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onTilesUpdate }) => {
-  const [searchValue, setSearchValue] = useState('');
-
+const SearchBar: React.FC<SearchBarProps> = ({ query, setQuery, onSearch }) => {
   const fetchMovies = async () => {
-    onTilesUpdate(await new ApiService().fetchMovies(searchValue));
+    onSearch(await new ApiService().fetchMovies(query));
   };
 
-  const handleSearchClick = async () => {
+  const onSearchClick = async () => {
     await fetchMovies();
   };
 
-  const handleInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchValue(event.target.value);
+  const onInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newQuery = event.target.value;
+    setQuery(newQuery);
 
-    if (searchValue.length >= 3) {
+    if (newQuery.length >= config.minSearchLength) {
       await fetchMovies();
     }
   };
@@ -36,12 +38,12 @@ const SearchBar: React.FC<SearchBarProps> = ({ onTilesUpdate }) => {
             placeholder="Search"
             aria-label="Search"
             aria-describedby="button-addon3"
-            onChange={handleInputChange}
+            onChange={onInputChange}
           />
 
           <button
             id="button-addon3"
-            onClick={handleSearchClick}
+            onClick={onSearchClick}
             type="button"
             className="relative z-[2] rounded-r border-2 border-primary px-6 py-2 text-xs font-medium uppercase text-primary transition duration-150 ease-in-out hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0"
             data-te-ripple-init
