@@ -1,7 +1,7 @@
 import { createSigner } from "fast-jwt";
 import app from "../../app";
 import config from '../../config';
-import RedisClient from '../../lib/cache';
+import Cache from '../../lib/cache';
 import MovieDatabaseClient from '../../lib/movie-database-client';
 
 jest.mock('../../lib/movie-database-client');
@@ -11,16 +11,21 @@ describe('Get movies route', () => {
   const mockQuery = 'test-query';
   const mockRequestedPage = 1;
   const mockResponse = { response: 'test-response' };
+  const mockExpireSeconds = 3;
   const redisClientExistsMock = jest.fn();
   const redisClientGetMock = jest.fn();
   const redisClientSetMock = jest.fn();
+  const redisClientExpireMock = jest.fn();
   const signSync = createSigner({ key: config.jwtSecret });
 
   beforeEach(() => {
-    (RedisClient.getClient as jest.Mock).mockResolvedValue({
+    jest.replaceProperty(config.cache, 'expireSeconds', mockExpireSeconds);
+
+    (Cache.getClient as jest.Mock).mockResolvedValue({
       exists: redisClientExistsMock,
       get: redisClientGetMock,
       set: redisClientSetMock,
+      expire: redisClientExpireMock,
     });
   });
 
@@ -67,13 +72,16 @@ describe('Get movies route', () => {
       });
 
       expect(redisClientSetMock).toHaveBeenCalledWith(`${mockQuery}_${mockRequestedPage}`, JSON.stringify(mockResponse));
+      expect(redisClientExpireMock).toHaveBeenCalledWith(`${mockQuery}_${mockRequestedPage}`, mockExpireSeconds);
     });
   });
 
   describe('when query result is cached', () => {
     test('should respond with cached data', async () => {
       redisClientExistsMock.mockResolvedValue(true);
-      redisClientGetMock.mockImplementation(async (key) => (key === `${mockQuery}_${mockRequestedPage}` ? JSON.stringify(mockResponse) : undefined));
+      redisClientGetMock.mockImplementation(async (key) =>
+        key === `${mockQuery}_${mockRequestedPage}` ? JSON.stringify(mockResponse) : undefined,
+      );
 
       const response = await app().inject({
         method: 'GET',
