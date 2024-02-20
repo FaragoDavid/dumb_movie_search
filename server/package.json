@@ -1,9 +1,6 @@
 {
-  "name": "tech_assessment",
+  "name": "dumb_movie_search_service",
   "version": "1.0.0",
-  "description": "The task is to create a UI (whether it a backend or frontend rendered page) which has an input box and a search button.",
-  "author": "Faragó Dávid",
-  "license": "UNLICENSED",
   "scripts": {
     "build": "tsc -p tsconfig.json || true",
     "build:watch": "tsc -w -p tsconfig.json || true",
